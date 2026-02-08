@@ -1,8 +1,6 @@
 
 package tp.demo.Publicaciones.Entidad;
-import java.util.Date; // Cambiado de java.sql.Date a java.util.Date
-import org.springframework.data.annotation.Id;
-import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.Date; 
 
 public class UsuarioReaccion {
 

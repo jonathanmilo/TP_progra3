@@ -1,6 +1,7 @@
 package tp.demo.Publicaciones.Controller;
 import org.springframework.web.bind.annotation.*;
 import tp.demo.Publicaciones.Entidad.Publicacion;
+import tp.demo.Publicaciones.Entidad.PublicacionRelevante;
 import tp.demo.Publicaciones.Service.PublicacionService;
 
 import java.util.List;
@@ -15,14 +16,14 @@ public class PublicacionController {
         this.publicacionService = publicacionService;
     }
 
-    @PostMapping
+    @PostMapping ("/crear")
     public Publicacion crear(@RequestBody Publicacion publicacion) {
         return publicacionService.nuevaPublicacion(publicacion);
     }
 
     @GetMapping
     public List<Publicacion> todos() {
-        return publicacionService.listar();
+        return publicacionService.listarTodas();
     }
     @GetMapping("/{id}")
     public Publicacion obtener(@PathVariable String id) {
@@ -31,7 +32,7 @@ public class PublicacionController {
 
     @GetMapping("/usuario/{usuarioId}")
     public List<Publicacion> porUsuario(@PathVariable String usuarioId) {
-        return publicacionService.listar().stream()
+        return publicacionService.listarTodas().stream()
                 .filter(p -> p.getIdCreador().equals(usuarioId))
                 .toList();
     }
@@ -39,4 +40,13 @@ public class PublicacionController {
     public boolean reaccionar(@PathVariable String id, @RequestParam String idUsuario) {
         return publicacionService.reaccionar(id, idUsuario);
     }
+    @GetMapping("/relevantes")
+    public List<PublicacionRelevante> publicacionesRelevantes() {
+        return publicacionService.obtenerPublicacionesRelevantes();
+    }
+    @PostMapping("/relevantes/actualizarK")
+    public List<PublicacionRelevante> actualizarK(@RequestParam int nuevoK) {
+        return publicacionService.actualizarK(nuevoK);
+    }
+    
 }
