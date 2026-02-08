@@ -1,6 +1,6 @@
 package tp.demo.Publicaciones.Entidad;
 import tp.demo.Publicaciones.Entidad.UsuarioReaccion;
-import java.sql.Date;
+import java.util.Date; 
 import java.util.List;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -19,6 +19,9 @@ public class Publicacion {
     private String idCreador;
     private Date fechaCreacion;
     private List<UsuarioReaccion> reacciones;
+
+    public Publicacion() {
+    }
 
     public Publicacion( String contenido, String idCreador, Date fechaCreacion, List<UsuarioReaccion> reacciones) {
         
@@ -46,7 +49,9 @@ public class Publicacion {
     public List<UsuarioReaccion> getReacciones() {
         return reacciones;
     }
-    public void agregarReaccion(UsuarioReaccion reaccion) {
-        reacciones.add(reaccion);
+    public boolean agregarReaccion(String idUsuario) {
+        UsuarioReaccion nuevaReaccion = new UsuarioReaccion(this.id, idUsuario, new Date(System.currentTimeMillis()));
+        this.reacciones.add(nuevaReaccion);
+        return true;
     }
 }

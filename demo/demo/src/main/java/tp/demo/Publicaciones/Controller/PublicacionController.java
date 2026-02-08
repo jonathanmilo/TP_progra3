@@ -35,4 +35,8 @@ public class PublicacionController {
                 .filter(p -> p.getIdCreador().equals(usuarioId))
                 .toList();
     }
+    @PostMapping("/{id}/reaccionar")
+    public boolean reaccionar(@PathVariable String id, @RequestParam String idUsuario) {
+        return publicacionService.reaccionar(id, idUsuario);
+    }
 }
