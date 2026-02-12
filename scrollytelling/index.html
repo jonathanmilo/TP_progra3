@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrollytelling Demo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="steps-container">
+        <div class="step" id="step-1">
+            <div class="step-content">
+                <h2>Step 1</h2>
+                <p>Welcome to the scrollytelling demo. Scroll down or use the navigation controls below.</p>
+            </div>
+        </div>
+        <div class="step" id="step-2">
+            <div class="step-content">
+                <h2>Step 2</h2>
+                <p>This is the second step. Notice how the navigation updates as you scroll.</p>
+            </div>
+        </div>
+        <div class="step" id="step-3">
+            <div class="step-content">
+                <h2>Step 3</h2>
+                <p>You're halfway through! The slider reflects your current position.</p>
+            </div>
+        </div>
+        <div class="step" id="step-4">
+            <div class="step-content">
+                <h2>Step 4</h2>
+                <p>Almost there! Try using the Previous and Next buttons.</p>
+            </div>
+        </div>
+        <div class="step" id="step-5">
+            <div class="step-content">
+                <h2>Step 5</h2>
+                <p>You've reached the final step. Great job!</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="prevBtn" class="nav-button">Previous</button>
+        <input type="range" id="stepSlider" min="1" max="5" value="1" step="1">
+        <span id="stepIndicator">Step 1 of 5</span>
+        <button id="nextBtn" class="nav-button">Next</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
