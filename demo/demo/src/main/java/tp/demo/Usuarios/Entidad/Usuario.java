@@ -11,6 +11,8 @@ public class Usuario {
     private String id;
     
     private String nombre;
+
+    private int tiempoMaximoExposicion;
     
     public Usuario() {
     }
@@ -36,4 +38,8 @@ public class Usuario {
     public void setNombre(String nombre) {
         this.nombre = nombre;
     }
+
+    public int getTiempoMaximoExposicion() { return tiempoMaximoExposicion; }
+
+    public void setTiempoMaximoExposicion(int tiempo) { this.tiempoMaximoExposicion = tiempo; }
 }

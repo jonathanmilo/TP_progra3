@@ -5,24 +5,29 @@ import tp.demo.Publicaciones.Entidad.Publicacion;
 import tp.demo.Publicaciones.Entidad.PublicacionRelevante;
 import tp.demo.Publicaciones.Repository.PublicacionRepository;
 import tp.demo.Publicaciones.Repository.PublicacionesRelevantesRespository;
+import tp.demo.Usuarios.Entidad.Usuario;
+import tp.demo.Usuarios.Repository.UsuarioRepository;
+import tp.demo.recursos.KnapsackOptimizador;
 import tp.demo.recursos.funciones;
 
 import java.util.*;
 
 @Service
 public class PublicacionService {
+    private final UsuarioRepository usuarioRepository;
     private int k = 10;
     private final PublicacionRepository publicacionRepository;
     private final PublicacionesRelevantesRespository publicacionesRelevantesRespository;
     private final funciones funcionesUtil;
 
-    public PublicacionService(PublicacionRepository publicacionRepository, 
-                              PublicacionesRelevantesRespository publicacionesRelevantesRespository) {
+    public PublicacionService(PublicacionRepository publicacionRepository,
+                              PublicacionesRelevantesRespository publicacionesRelevantesRespository, UsuarioRepository usuarioRepository) {
         this.publicacionRepository = publicacionRepository;
         this.publicacionesRelevantesRespository = publicacionesRelevantesRespository;
         this.funcionesUtil = new funciones();
         
         inicializarPublicacionesRelevantes();
+        this.usuarioRepository = usuarioRepository;
     }
     
     // ========== MÉTODOS PÚBLICOS ==========
@@ -114,6 +119,29 @@ public class PublicacionService {
         this.k = nuevoK;
         recalcularPublicacionesRelevantesCompleto();
         return obtenerPublicacionesRelevantes();
+    }
+
+    /**
+     * Este es el método "generarCampaña" que coordina todo el Problema 2.
+     */
+    public List<KnapsackOptimizador.ResultadoAsignacion> generarCampaña(int presupuestoMaximoEmpresa) {
+        List<Usuario> usuarios = usuarioRepository.findAll();
+        List<Publicacion> anuncios = publicacionRepository.findAll();
+        List<KnapsackOptimizador.ResultadoAsignacion> resultadosFinales = new ArrayList<>();
+
+        int costoTotalAcumulado = 0;
+
+        for (Usuario usuario : usuarios) {
+            KnapsackOptimizador.ResultadoAsignacion asignacion = KnapsackOptimizador.optimizarParaUsuario(usuario, anuncios);
+
+            // Verificación del presupuesto global de la empresa
+            if (costoTotalAcumulado + asignacion.getCostoEconomicoTotal() <= presupuestoMaximoEmpresa) {
+                resultadosFinales.add(asignacion);
+                costoTotalAcumulado += asignacion.getCostoEconomicoTotal();
+            }
+        }
+
+        return resultadosFinales;
     }
     
     // ========== MÉTODOS PRIVADOS ==========

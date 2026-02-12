@@ -3,6 +3,7 @@ import org.springframework.web.bind.annotation.*;
 import tp.demo.Publicaciones.Entidad.Publicacion;
 import tp.demo.Publicaciones.Entidad.PublicacionRelevante;
 import tp.demo.Publicaciones.Service.PublicacionService;
+import tp.demo.recursos.KnapsackOptimizador;
 
 import java.util.List;
 
@@ -47,6 +48,11 @@ public class PublicacionController {
     @PostMapping("/relevantes/actualizarK")
     public List<PublicacionRelevante> actualizarK(@RequestParam int nuevoK) {
         return publicacionService.actualizarK(nuevoK);
+    }
+
+    @GetMapping("/optimizar-publicidad")
+    public List<KnapsackOptimizador.ResultadoAsignacion> optimizarPublicidad(@RequestParam int presupuestoEmpresa) {
+        return publicacionService.generarCampaña(presupuestoEmpresa);
     }
     
 }

@@ -19,6 +19,8 @@ public class Publicacion {
     private Date fechaCreacion;
     private List<UsuarioReaccion> reacciones;
     private float relevancia; // para solución de problema 1
+    private int costo;    // Dinero que cuesta este anuncio
+    private int duracion; // Tiempo que dura el anuncio (en segundos)
 
     // ✅ Constructor sin argumentos (OBLIGATORIO para Jackson)
     public Publicacion() {
@@ -81,11 +83,19 @@ public class Publicacion {
     public void setReacciones(List<UsuarioReaccion> reacciones) {
         this.reacciones = reacciones;
     }
+
+    public int getCosto() { return costo; }
+    public void setCosto(int costo) { this.costo = costo; }
+
+    public int getDuracion() { return duracion; }
+    public void setDuracion(int duracion) { this.duracion = duracion; }
     
     // ✅ Método para obtener cantidad de reacciones rápidamente
     public int getCantidadReacciones() {
         return reacciones != null ? reacciones.size() : 0;
     }
+
+
     
     public boolean agregarReaccion(String idUsuario) {
         if (this.reacciones == null) {
