@@ -5,6 +5,12 @@ const prevBtn = document.getElementById('prevBtn');
 const nextBtn = document.getElementById('nextBtn');
 const stepIndicator = document.getElementById('stepIndicator');
 
+// Configuration constants
+const SCROLL_ANIMATION_DURATION = 1000; // Duration of smooth scroll animation in ms
+const MANUAL_SCROLL_THRESHOLD = 100; // Time threshold to detect manual scroll during animation in ms
+const SCROLL_DEBOUNCE_DELAY = 50; // Debounce delay for scroll events in ms
+const SLIDER_DEBOUNCE_DELAY = 100; // Debounce delay for slider input in ms
+
 // State
 let currentStep = 1;
 let isScrolling = false;
@@ -68,7 +74,7 @@ function scrollToStep(stepNumber) {
     clearTimeout(scrollTimeout);
     scrollTimeout = setTimeout(() => {
         isScrolling = false;
-    }, 1000);
+    }, SCROLL_ANIMATION_DURATION);
 }
 
 // Intersection Observer for scroll-based step detection
@@ -97,7 +103,7 @@ steps.forEach(step => observer.observe(step));
 slider.addEventListener('input', debounce((e) => {
     const stepNumber = parseInt(e.target.value);
     scrollToStep(stepNumber);
-}, 100));
+}, SLIDER_DEBOUNCE_DELAY));
 
 // Previous button handler
 prevBtn.addEventListener('click', () => {
@@ -121,11 +127,11 @@ const scrollHandler = debounce(() => {
     lastScrollTime = currentTime;
     
     // If user scrolls manually during animation, cancel the programmatic scroll
-    if (isScrolling && timeSinceLastScroll < 100) {
+    if (isScrolling && timeSinceLastScroll < MANUAL_SCROLL_THRESHOLD) {
         isScrolling = false;
         clearTimeout(scrollTimeout);
     }
-}, 50);
+}, SCROLL_DEBOUNCE_DELAY);
 
 window.addEventListener('scroll', scrollHandler, { passive: true });
 
