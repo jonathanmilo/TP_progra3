@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimización de Publicidad</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .header-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .presupuesto-form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 15px;
+        }
+        .presupuesto-form input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            width: 200px;
+        }
+        .presupuesto-form button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .presupuesto-form button:hover {
+            background-color: #0056b3;
+        }
+        .resumen {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .resumen-card {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .resumen-card h3 {
+            margin: 0 0 10px 0;
+            color: #666;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        .resumen-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .usuario-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .usuario-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #007bff;
+            margin-bottom: 15px;
+        }
+        .usuario-nombre {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+        .usuario-stats {
+            display: flex;
+            gap: 20px;
+        }
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .publicaciones-asignadas {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .publicacion-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+        }
+        .publicacion-contenido {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .publicacion-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #666;
+        }
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            background: white;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-link">← Volver al inicio</a>
+    <h1>Optimización de Campaña Publicitaria</h1>
+
+    <div class="header-section">
+        <h3>Algoritmo Knapsack para Asignación de Anuncios</h3>
+        <p style="margin: 10px 0; color: #666;">
+            Este sistema optimiza la asignación de anuncios a usuarios maximizando el alcance total
+            sin exceder el presupuesto de la empresa. Utiliza programación dinámica para resolver
+            el problema de la mochila.
+        </p>
+        <form class="presupuesto-form" action="/view/optimizar-publicidad" method="get">
+            <label for="presupuesto" style="font-weight: bold;">Presupuesto de la Empresa:</label>
+            <input type="number" id="presupuesto" name="presupuesto"
+                   th:value="${presupuestoDefault}"
+                   min="0"
+                   placeholder="Ej: 10000">
+            <button type="submit">Calcular Optimización</button>
+        </form>
+    </div>
+
+    <div th:if="${resultados != null and !resultados.isEmpty()}">
+        <div class="resumen">
+            <div class="resumen-card">
+                <h3>Usuarios Alcanzados</h3>
+                <div class="resumen-value" th:text="${resultados.size()}">0</div>
+            </div>
+            <div class="resumen-card">
+                <h3>Costo Total</h3>
+                <div class="resumen-value" style="color: #dc3545;">
+                    $<span th:text="${costoTotal}">0</span>
+                </div>
+                <small style="color: #666;">
+                    de $<span th:text="${presupuestoDefault}">0</span> disponibles
+                    (<span th:text="${(costoTotal * 100.0 / presupuestoDefault)}">0</span>% usado)
+                </small>
+            </div>
+            <div class="resumen-card">
+                <h3>Alcance Total</h3>
+                <div class="resumen-value" style="color: #28a745;">
+                    <span th:text="${#numbers.formatInteger(alcanceTotal, 0, 'COMMA')}">0</span>
+                </div>
+                <small style="color: #666;">personas (impresiones)</small>
+            </div>
+            <div class="resumen-card">
+                <h3>⏱️ Tiempo Total</h3>
+                <div class="resumen-value" style="color: #ffc107;">
+                    <span th:text="${tiempoTotal}">0</span>s
+                </div>
+                <small style="color: #666;">exposición acumulada</small>
+            </div>
+        </div>
+
+        <div th:each="resultado : ${resultados}" class="usuario-section">
+            <div class="usuario-header">
+                <div class="usuario-nombre" th:text="'👤 ' + ${resultado.usuarioNombre}">Usuario</div>
+                <div class="usuario-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Anuncios</span>
+                        <span class="stat-value" th:text="${resultado.anunciosAsignados.size()}">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Costo</span>
+                        <span class="stat-value" style="color: #dc3545;">
+                            $<span th:text="${resultado.costoEconomicoTotal}">0</span>
+                        </span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Alcance</span>
+                        <span class="stat-value" style="color: #28a745;" th:text="${resultado.alcanceTotal}">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Tiempo</span>
+                        <span class="stat-value" style="color: #ffc107;" th:text="${resultado.tiempoTotalUsado} + 's'">0s</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="publicaciones-asignadas">
+                <div th:each="pub : ${resultado.anunciosAsignados}" class="publicacion-card">
+                    <div class="publicacion-contenido" th:text="${pub.contenido}" th:title="${pub.contenido}">Contenido del anuncio</div>
+                    <div class="publicacion-details">
+                        <span>💰 Costo: $<span th:text="${pub.costo}">0</span></span>
+                        <span>⏱️ Duración: <span th:text="${pub.duracion}">0</span>s</span>
+                        <span>🔥 Reacciones: <span th:text="${pub.cantidadReacciones}">0</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${resultados == null or resultados.isEmpty()}" class="no-data">
+        <p>📭 No se pudieron generar resultados con el presupuesto especificado</p>
+        <p>Intenta aumentar el presupuesto o verifica que haya publicaciones y usuarios en el sistema</p>
+    </div>
+</body>
+</html>
+

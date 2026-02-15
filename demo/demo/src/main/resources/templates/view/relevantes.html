@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Publicaciones Relevantes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .header-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .info-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #28a745;
+            color: white;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        table {
+            width: 100%;
+            background-color: white;
+            border-collapse: collapse;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th {
+            background-color: #28a745;
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .contenido {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .stats {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .stat-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .stat-likes {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+        .stat-comments {
+            background-color: #f3e5f5;
+            color: #7b1fa2;
+        }
+        .stat-reactions {
+            background-color: #fff3e0;
+            color: #f57c00;
+        }
+        .relevancia {
+            font-weight: bold;
+            color: #28a745;
+            font-size: 1.1em;
+        }
+        .ranking {
+            background-color: #ffd700;
+            color: #333;
+            padding: 4px 8px;
+            border-radius: 50%;
+            font-weight: bold;
+            text-align: center;
+            min-width: 30px;
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-link">← Volver al inicio</a>
+    <h1>⭐ Publicaciones Relevantes</h1>
+
+    <div class="header-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+            <div>
+                <span class="info-badge" th:text="'Total: ' + ${publicaciones.size()} + ' publicaciones'">Total: 0 publicaciones</span>
+                <p style="margin: 10px 0 0 0; color: #666;">
+                    Estas son las publicaciones más relevantes del sistema, calculadas usando el algoritmo de relevancia basado en likes, comentarios y tiempo.
+                </p>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <form id="updateKForm" style="display: flex; gap: 10px; align-items: center;">
+                    <label for="nuevoK" style="font-weight: bold; color: #333;">
+                        📊 Cantidad a mostrar (K):
+                    </label>
+                    <select id="nuevoK" name="nuevoK" style="padding: 8px 12px; border: 2px solid #28a745; border-radius: 4px; font-size: 14px; cursor: pointer;">
+                        <option value="5">Top 5</option>
+                        <option value="10" selected>Top 10</option>
+                        <option value="15">Top 15</option>
+                        <option value="20">Top 20</option>
+                        <option value="30">Top 30</option>
+                        <option value="50">Top 50</option>
+                    </select>
+                    <button type="button" onclick="actualizarK()" style="padding: 8px 16px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                        🔄 Actualizar
+                    </button>
+                </form>
+
+                <button type="button" onclick="recalcularRelevancia()" style="padding: 8px 16px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                    ⚡ Recalcular
+                </button>
+            </div>
+        </div>
+
+        <div id="mensaje" style="margin-top: 15px; padding: 10px; border-radius: 4px; display: none;"></div>
+    </div>
+
+    <script>
+        function actualizarK() {
+            const nuevoK = document.getElementById('nuevoK').value;
+            const mensaje = document.getElementById('mensaje');
+
+            mensaje.style.display = 'block';
+            mensaje.style.backgroundColor = '#fff3cd';
+            mensaje.style.color = '#856404';
+            mensaje.textContent = '⏳ Actualizando K a ' + nuevoK + '...';
+
+            fetch('/publicaciones/relevantes/actualizarK?nuevoK=' + nuevoK, {
+                method: 'POST'
+            })
+            .then(response => response.text())
+            .then(data => {
+                mensaje.style.backgroundColor = '#d4edda';
+                mensaje.style.color = '#155724';
+                mensaje.textContent = '✅ ' + data;
+
+                // Recargar la página después de 1 segundo
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            })
+            .catch(error => {
+                mensaje.style.backgroundColor = '#f8d7da';
+                mensaje.style.color = '#721c24';
+                mensaje.textContent = '❌ Error al actualizar K: ' + error;
+            });
+        }
+
+        function recalcularRelevancia() {
+            const mensaje = document.getElementById('mensaje');
+
+            mensaje.style.display = 'block';
+            mensaje.style.backgroundColor = '#fff3cd';
+            mensaje.style.color = '#856404';
+            mensaje.textContent = '⏳ Recalculando relevancia de todas las publicaciones...';
+
+            fetch('/publicaciones/relevantes/calcular', {
+                method: 'POST'
+            })
+            .then(response => response.text())
+            .then(data => {
+                mensaje.style.backgroundColor = '#d4edda';
+                mensaje.style.color = '#155724';
+                mensaje.textContent = '✅ ' + data;
+
+                // Recargar la página después de 1 segundo
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            })
+            .catch(error => {
+                mensaje.style.backgroundColor = '#f8d7da';
+                mensaje.style.color = '#721c24';
+                mensaje.textContent = '❌ Error al recalcular: ' + error;
+            });
+        }
+    </script>
+
+    <div th:if="${publicaciones != null and !publicaciones.isEmpty()}">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>ID</th>
+                    <th>Contenido</th>
+                    <th>ID Creador</th>
+                    <th>Tipo</th>
+                    <th>Fecha Creación</th>
+                    <th>Métricas</th>
+                    <th>Relevancia</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="publicacion, iterStat : ${publicaciones}">
+                    <td>
+                        <span class="ranking" th:text="${iterStat.index + 1}">1</span>
+                    </td>
+                    <td th:text="${publicacion.id}">ID</td>
+                    <td class="contenido" th:text="${publicacion.contenido}" th:title="${publicacion.contenido}">Contenido</td>
+                    <td th:text="${publicacion.idCreador}">ID Creador</td>
+                    <td th:text="${publicacion.tipo}">Tipo</td>
+                    <td th:text="${#dates.format(publicacion.fechaCreacion, 'dd/MM/yyyy HH:mm')}">Fecha</td>
+                    <td>
+                        <div class="stats">
+                            <span class="stat-badge stat-likes">
+                                👍 <span th:text="${publicacion.likes}">0</span>
+                            </span>
+                            <span class="stat-badge stat-comments">
+                                💬 <span th:text="${publicacion.comentarios}">0</span>
+                            </span>
+                            <span class="stat-badge stat-reactions">
+                                🔥 <span th:text="${publicacion.cantidadReacciones}">0</span>
+                            </span>
+                        </div>
+                    </td>
+                    <td class="relevancia" th:text="${#numbers.formatDecimal(publicacion.relevancia, 1, 2)}">0.00</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div th:if="${publicaciones == null or publicaciones.isEmpty()}" class="no-data">
+        <p>📭 No hay publicaciones relevantes en el sistema</p>
+    </div>
+</body>
+</html>
+
