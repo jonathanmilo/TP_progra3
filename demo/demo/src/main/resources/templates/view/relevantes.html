@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Publicaciones Relevantes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .header-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .info-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #28a745;
+            color: white;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        table {
+            width: 100%;
+            background-color: white;
+            border-collapse: collapse;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th {
+            background-color: #28a745;
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .contenido {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .stats {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .stat-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .stat-likes {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+        .stat-comments {
+            background-color: #f3e5f5;
+            color: #7b1fa2;
+        }
+        .stat-reactions {
+            background-color: #fff3e0;
+            color: #f57c00;
+        }
+        .relevancia {
+            font-weight: bold;
+            color: #28a745;
+            font-size: 1.1em;
+        }
+        .ranking {
+            background-color: #ffd700;
+            color: #333;
+            padding: 4px 8px;
+            border-radius: 50%;
+            font-weight: bold;
+            text-align: center;
+            min-width: 30px;
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-link">← Volver al inicio</a>
+    <h1>⭐ Publicaciones Relevantes</h1>
+
+    <div class="header-section">
+        <span class="info-badge" th:text="'Total: ' + ${publicaciones.size()} + ' publicaciones'">Total: 0 publicaciones</span>
+        <p style="margin: 10px 0 0 0; color: #666;">
+            Estas son las publicaciones más relevantes del sistema, calculadas usando el algoritmo de relevancia basado en likes, comentarios y tiempo.
+        </p>
+    </div>
+
+    <div th:if="${publicaciones != null and !publicaciones.isEmpty()}">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>ID</th>
+                    <th>Contenido</th>
+                    <th>ID Creador</th>
+                    <th>Fecha Creación</th>
+                    <th>Métricas</th>
+                    <th>Relevancia</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="publicacion, iterStat : ${publicaciones}">
+                    <td>
+                        <span class="ranking" th:text="${iterStat.index + 1}">1</span>
+                    </td>
+                    <td th:text="${publicacion.id}">ID</td>
+                    <td class="contenido" th:text="${publicacion.contenido}" th:title="${publicacion.contenido}">Contenido</td>
+                    <td th:text="${publicacion.idCreador}">ID Creador</td>
+                    <td th:text="${#dates.format(publicacion.fechaCreacion, 'dd/MM/yyyy HH:mm')}">Fecha</td>
+                    <td>
+                        <div class="stats">
+                            <span class="stat-badge stat-likes">
+                                👍 <span th:text="${publicacion.likes}">0</span>
+                            </span>
+                            <span class="stat-badge stat-comments">
+                                💬 <span th:text="${publicacion.comentarios}">0</span>
+                            </span>
+                            <span class="stat-badge stat-reactions">
+                                🔥 <span th:text="${publicacion.cantidadReacciones}">0</span>
+                            </span>
+                        </div>
+                    </td>
+                    <td class="relevancia" th:text="${#numbers.formatDecimal(publicacion.relevancia, 1, 2)}">0.00</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div th:if="${publicaciones == null or publicaciones.isEmpty()}" class="no-data">
+        <p>📭 No hay publicaciones relevantes en el sistema</p>
+    </div>
+</body>
+</html>
+
