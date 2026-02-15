@@ -1,11 +1,12 @@
 package tp.demo.controller;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tp.demo.model.Publicacion;
 import tp.demo.model.PublicacionRelevante;
+import tp.demo.model.ResultadoAsignacion;
+import tp.demo.model.ResultadoPortada;
 import tp.demo.service.PublicacionService;
-import tp.demo.utils.KnapsackOptimizador;
 
 import java.util.List;
 
@@ -75,19 +76,21 @@ public class PublicacionController {
         return publicacionService.obtenerPublicacionesRelevantes();
     }
 
-    @PostMapping("/relevantes/actualizarK")
-    public List<PublicacionRelevante> actualizarK(@RequestParam int nuevoK) {
-        return publicacionService.actualizarK(nuevoK);
+    @PostMapping("/relevantes/calcular")
+    public ResponseEntity<String> calcularRelevancia() {
+        publicacionService.calcularYActualizarRelevancia();
+        int count = publicacionService.obtenerPublicacionesRelevantes().size();
+        return ResponseEntity.ok("Relevancia calculada exitosamente. Total de publicaciones relevantes: " + count);
     }
 
+
     @GetMapping("/optimizar-publicidad")
-    public List<KnapsackOptimizador.ResultadoAsignacion> optimizarPublicidad(@RequestParam int presupuestoEmpresa) {
+    public List<ResultadoAsignacion> optimizarPublicidad(@RequestParam int presupuestoEmpresa) {
         return publicacionService.generarCampaña(presupuestoEmpresa);
     }
     
     @GetMapping("/optimizar-portada")
-    public KnapsackOptimizador.ResultadoPortada optimizarPortada(
-            @Parameter(description = "Espacio disponible en la portada", example = "20")
+    public ResultadoPortada optimizarPortada(
             @RequestParam int espacioDisponible) {
         return publicacionService.optimizarPortada(espacioDisponible);
     }

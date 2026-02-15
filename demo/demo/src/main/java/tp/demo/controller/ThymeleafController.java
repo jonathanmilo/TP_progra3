@@ -4,9 +4,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import tp.demo.model.ResultadoAsignacion;
+import tp.demo.model.ResultadoPortada;
 import tp.demo.service.PublicacionService;
 import tp.demo.service.UsuarioService;
-import tp.demo.utils.KnapsackOptimizador;
 
 import java.util.List;
 
@@ -46,25 +47,32 @@ public class ThymeleafController {
 
     @GetMapping("/view/optimizar-publicidad")
     public String optimizarPublicidad(Model model, @RequestParam(required = false, defaultValue = "10000") int presupuesto) {
-        List<KnapsackOptimizador.ResultadoAsignacion> resultados = publicacionService.generarCampaña(presupuesto);
+        List<ResultadoAsignacion> resultados = publicacionService.generarCampaña(presupuesto);
+
+        // Filtrar solo usuarios que recibieron anuncios (tienen costo > 0)
+        List<ResultadoAsignacion> resultadosConAnuncios = resultados.stream()
+            .filter(r -> r.getCostoEconomicoTotal() > 0)
+            .toList();
 
         // Calcular totales
-        int costoTotal = resultados.stream().mapToInt(KnapsackOptimizador.ResultadoAsignacion::getCostoEconomicoTotal).sum();
-        int alcanceTotal = resultados.stream().mapToInt(KnapsackOptimizador.ResultadoAsignacion::getAlcanceTotal).sum();
-        int tiempoTotal = resultados.stream().mapToInt(KnapsackOptimizador.ResultadoAsignacion::getTiempoTotalUsado).sum();
+        int costoTotal = resultadosConAnuncios.stream().mapToInt(ResultadoAsignacion::getCostoEconomicoTotal).sum();
+        int alcanceTotal = resultadosConAnuncios.stream().mapToInt(ResultadoAsignacion::getAlcanceTotal).sum();
+        int tiempoTotal = resultadosConAnuncios.stream().mapToInt(ResultadoAsignacion::getTiempoTotalUsado).sum();
 
         model.addAttribute("presupuestoDefault", presupuesto);
-        model.addAttribute("resultados", resultados);
+        model.addAttribute("resultados", resultadosConAnuncios); // Solo usuarios con anuncios
         model.addAttribute("costoTotal", costoTotal);
         model.addAttribute("alcanceTotal", alcanceTotal);
         model.addAttribute("tiempoTotal", tiempoTotal);
+        model.addAttribute("usuariosSinPresupuesto", resultados.size() - resultadosConAnuncios.size());
 
         return "view/optimizar-publicidad";
     }
 
     @GetMapping("/view/optimizar-portada")
-    public String optimizarPortada(Model model, @RequestParam(required = false, defaultValue = "20") int espacioDisponible) {
-        KnapsackOptimizador.ResultadoPortada resultado = publicacionService.optimizarPortada(espacioDisponible);
+    public String optimizarPortada(Model model,
+                                   @RequestParam(required = false, defaultValue = "20") int espacioDisponible) {
+        ResultadoPortada resultado = publicacionService.optimizarPortada(espacioDisponible);
 
         model.addAttribute("espacioDefault", espacioDisponible);
         model.addAttribute("resultado", resultado);

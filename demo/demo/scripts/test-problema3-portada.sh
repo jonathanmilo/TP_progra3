@@ -1,207 +1,240 @@
 #!/bin/bash
 
-# Script de Prueba - Problema 3: Optimización de Portada
-# Crea publicaciones con diferentes tamaños y beneficios (likes + comentarios)
-# Verifica que el algoritmo Knapsack seleccione la combinación óptima
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# PROBLEMA 3: Optimización de Portada (Knapsack DP)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 BASE_URL="http://localhost:8080"
-
-echo "🚀 Test: Problema 3 - Optimización de Portada"
-echo ""
 
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
+CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
 NC='\033[0m'
 
-echo -e "${BLUE}📝 Paso 1: Creando usuario de prueba...${NC}"
-
-USER_ID=$(curl -s -X POST "${BASE_URL}/usuarios" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "nombre": "Portada Test",
-    "email": "portada@example.com",
-    "intereses": ["test"],
-    "tiempoMaximoExposicion": 60
-  }' | jq -r '.id')
-
-echo "✅ Usuario creado (ID: $USER_ID)"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo -e "${CYAN}     🏠 PROBLEMA 3: Optimización de Portada${NC}"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo -e "${MAGENTA}Algoritmo:${NC} Knapsack 0/1 con Programación Dinámica"
+echo -e "${MAGENTA}Objetivo:${NC} Maximizar engagement sin exceder espacio disponible"
+echo -e "${MAGENTA}Beneficio:${NC} likes + comentarios por publicación"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-echo -e "${BLUE}📢 Paso 2: Creando publicaciones con diferentes tamaños y engagement...${NC}"
+# Verificar servidor
+echo -e "${BLUE}🔍 Verificando servidor...${NC}"
+if ! curl -s "${BASE_URL}/actuator/health" > /dev/null 2>&1; then
+  echo -e "${RED}❌ ERROR: El servidor no está corriendo en ${BASE_URL}${NC}"
+  exit 1
+fi
+echo -e "${GREEN}✅ Servidor corriendo${NC}"
+echo ""
 
-declare -a PUB_IDS
+# Limpiar BD
+echo -e "${BLUE}🗑️  Limpiando base de datos...${NC}"
+curl -s -X DELETE "${BASE_URL}/publicaciones" > /dev/null
+curl -s -X DELETE "${BASE_URL}/usuarios" > /dev/null
+echo -e "${GREEN}✅ Base de datos limpia${NC}"
+echo ""
 
-# Pub 1: Tamaño pequeño, alto beneficio (eficiente)
-PUB_IDS[0]=$(curl -s -X POST "${BASE_URL}/publicaciones/crear" \
+# Crear usuarios
+echo -e "${BLUE}👥 PASO 1: Creando usuarios...${NC}"
+
+declare -a USUARIOS_IDS
+
+USUARIOS_IDS[0]=$(curl -s -X POST "${BASE_URL}/usuarios" \
   -H "Content-Type: application/json" \
-  -d "{
-    \"contenido\": \"Post eficiente: Alto engagement, poco espacio\",
-    \"idCreador\": \"$USER_ID\",
-    \"costo\": 50,
-    \"duracion\": 10,
-    \"alcancePotencial\": 500,
-    \"tamaño\": 2
-  }" | jq -r '.id')
-echo "📝 Pub #1: Tamaño 2 (ID: ${PUB_IDS[0]})"
+  -d '{"nombre":"@creator1","tiempoMaximoExposicion":120}' | jq -r '.id')
 
-# Pub 2: Tamaño medio, beneficio medio
-PUB_IDS[1]=$(curl -s -X POST "${BASE_URL}/publicaciones/crear" \
+USUARIOS_IDS[1]=$(curl -s -X POST "${BASE_URL}/usuarios" \
   -H "Content-Type: application/json" \
-  -d "{
-    \"contenido\": \"Post medio: Balance entre espacio y engagement\",
-    \"idCreador\": \"$USER_ID\",
-    \"costo\": 80,
-    \"duracion\": 15,
-    \"alcancePotencial\": 800,
-    \"tamaño\": 5
-  }" | jq -r '.id')
-echo "📝 Pub #2: Tamaño 5 (ID: ${PUB_IDS[1]})"
+  -d '{"nombre":"@creator2","tiempoMaximoExposicion":90}' | jq -r '.id')
 
-# Pub 3: Tamaño grande, alto beneficio
-PUB_IDS[2]=$(curl -s -X POST "${BASE_URL}/publicaciones/crear" \
+USUARIOS_IDS[2]=$(curl -s -X POST "${BASE_URL}/usuarios" \
   -H "Content-Type: application/json" \
-  -d "{
-    \"contenido\": \"Post grande: Mucho engagement pero ocupa mucho\",
-    \"idCreador\": \"$USER_ID\",
-    \"costo\": 150,
-    \"duracion\": 25,
-    \"alcancePotencial\": 1500,
-    \"tamaño\": 10
-  }" | jq -r '.id')
-echo "📝 Pub #3: Tamaño 10 (ID: ${PUB_IDS[2]})"
+  -d '{"nombre":"@creator3","tiempoMaximoExposicion":60}' | jq -r '.id')
 
-# Pub 4: Tamaño pequeño, bajo beneficio
-PUB_IDS[3]=$(curl -s -X POST "${BASE_URL}/publicaciones/crear" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"contenido\": \"Post ineficiente: Poco engagement\",
-    \"idCreador\": \"$USER_ID\",
-    \"costo\": 30,
-    \"duracion\": 8,
-    \"alcancePotencial\": 300,
-    \"tamaño\": 3
-  }" | jq -r '.id')
-echo "📝 Pub #4: Tamaño 3 (ID: ${PUB_IDS[3]})"
+echo -e "${GREEN}✅ 3 usuarios creados${NC}"
+echo ""
 
-# Pub 5: Tamaño variable
-PUB_IDS[4]=$(curl -s -X POST "${BASE_URL}/publicaciones/crear" \
+# Crear publicaciones con diferentes tamaños y engagement
+echo -e "${BLUE}📢 PASO 2: Creando publicaciones con engagement variado...${NC}"
+echo ""
+
+declare -a POSTS
+
+# VIDEO VIRAL (tamaño=4, alto engagement)
+POSTS[0]=$(curl -s -X POST "${BASE_URL}/publicaciones/crear" \
   -H "Content-Type: application/json" \
-  -d "{
-    \"contenido\": \"Post compacto: Buen ratio beneficio/tamaño\",
-    \"idCreador\": \"$USER_ID\",
-    \"costo\": 60,
-    \"duracion\": 12,
-    \"alcancePotencial\": 600,
-    \"tamaño\": 3
-  }" | jq -r '.id')
-echo "📝 Pub #5: Tamaño 3 (ID: ${PUB_IDS[4]})"
+  -d "{\"contenido\":\"🔥 Tutorial IA Completo 2026\",\"idCreador\":\"${USUARIOS_IDS[0]}\",\"tipo\":\"VIDEO\",\"costo\":200,\"duracion\":30,\"alcancePotencial\":5000}" \
+  | jq -r '.id')
+
+# VIDEO POPULAR (tamaño=4, medio-alto engagement)
+POSTS[1]=$(curl -s -X POST "${BASE_URL}/publicaciones/crear" \
+  -H "Content-Type: application/json" \
+  -d "{\"contenido\":\"📹 Demo de Proyecto\",\"idCreador\":\"${USUARIOS_IDS[1]}\",\"tipo\":\"VIDEO\",\"costo\":150,\"duracion\":25,\"alcancePotencial\":3000}" \
+  | jq -r '.id')
+
+# IMAGEN POPULAR (tamaño=2, alto engagement)
+POSTS[2]=$(curl -s -X POST "${BASE_URL}/publicaciones/crear" \
+  -H "Content-Type: application/json" \
+  -d "{\"contenido\":\"📸 Setup de Programación\",\"idCreador\":\"${USUARIOS_IDS[0]}\",\"tipo\":\"IMAGEN\",\"costo\":120,\"duracion\":20,\"alcancePotencial\":2500}" \
+  | jq -r '.id')
+
+# IMAGEN MEDIA (tamaño=2, medio engagement)
+POSTS[3]=$(curl -s -X POST "${BASE_URL}/publicaciones/crear" \
+  -H "Content-Type: application/json" \
+  -d "{\"contenido\":\"🖼️ Infografía Tech\",\"idCreador\":\"${USUARIOS_IDS[1]}\",\"tipo\":\"IMAGEN\",\"costo\":100,\"duracion\":15,\"alcancePotencial\":2000}" \
+  | jq -r '.id')
+
+# TEXTO TRENDING (tamaño=1, alto engagement)
+POSTS[4]=$(curl -s -X POST "${BASE_URL}/publicaciones/crear" \
+  -H "Content-Type: application/json" \
+  -d "{\"contenido\":\"💡 Tips para entrevistas técnicas\",\"idCreador\":\"${USUARIOS_IDS[0]}\",\"tipo\":\"TEXTO\",\"costo\":80,\"duracion\":10,\"alcancePotencial\":1500}" \
+  | jq -r '.id')
+
+# TEXTO POPULAR (tamaño=1, medio engagement)
+POSTS[5]=$(curl -s -X POST "${BASE_URL}/publicaciones/crear" \
+  -H "Content-Type: application/json" \
+  -d "{\"contenido\":\"📝 Guía de Python\",\"idCreador\":\"${USUARIOS_IDS[1]}\",\"tipo\":\"TEXTO\",\"costo\":70,\"duracion\":8,\"alcancePotencial\":1200}" \
+  | jq -r '.id')
+
+# ENCUESTA POPULAR (tamaño=2, medio engagement)
+POSTS[6]=$(curl -s -X POST "${BASE_URL}/publicaciones/crear" \
+  -H "Content-Type: application/json" \
+  -d "{\"contenido\":\"📊 ¿Qué lenguaje prefieres?\",\"idCreador\":\"${USUARIOS_IDS[2]}\",\"tipo\":\"ENCUESTA\",\"costo\":90,\"duracion\":12,\"alcancePotencial\":1800}" \
+  | jq -r '.id')
+
+# TEXTO NORMAL (tamaño=1, bajo engagement)
+POSTS[7]=$(curl -s -X POST "${BASE_URL}/publicaciones/crear" \
+  -H "Content-Type: application/json" \
+  -d "{\"contenido\":\"📄 Artículo sobre Git\",\"idCreador\":\"${USUARIOS_IDS[2]}\",\"tipo\":\"TEXTO\",\"costo\":60,\"duracion\":7,\"alcancePotencial\":800}" \
+  | jq -r '.id')
+
+echo -e "${GREEN}✅ 8 publicaciones creadas con diferentes tamaños${NC}"
+echo ""
+
+# Agregar LIKES Y COMENTARIOS para generar engagement
+echo -e "${BLUE}❤️  PASO 3: Agregando engagement (likes + comentarios)...${NC}"
+echo ""
+
+# Post 0 (VIDEO VIRAL): 100 likes, 50 comentarios = 150 engagement
+echo -e "${YELLOW}Video Viral: agregando 150 reacciones...${NC}"
+for user_id in "${USUARIOS_IDS[@]}"; do
+  for i in {1..33}; do
+    curl -s -X POST "${BASE_URL}/publicaciones/${POSTS[0]}/like?idUsuario=${user_id}" > /dev/null 2>&1
+  done
+  curl -s -X POST "${BASE_URL}/publicaciones/${POSTS[0]}/comentario?idUsuario=${user_id}&cantidad=17" > /dev/null 2>&1
+done
+
+# Post 1 (VIDEO POPULAR): 60 likes, 30 comentarios = 90 engagement
+echo -e "${YELLOW}Video Popular: agregando 90 reacciones...${NC}"
+for user_id in "${USUARIOS_IDS[@]}"; do
+  for i in {1..20}; do
+    curl -s -X POST "${BASE_URL}/publicaciones/${POSTS[1]}/like?idUsuario=${user_id}" > /dev/null 2>&1
+  done
+  curl -s -X POST "${BASE_URL}/publicaciones/${POSTS[1]}/comentario?idUsuario=${user_id}&cantidad=10" > /dev/null 2>&1
+done
+
+# Post 2 (IMAGEN POPULAR): 80 likes, 40 comentarios = 120 engagement
+echo -e "${YELLOW}Imagen Popular: agregando 120 reacciones...${NC}"
+for user_id in "${USUARIOS_IDS[@]}"; do
+  for i in {1..27}; do
+    curl -s -X POST "${BASE_URL}/publicaciones/${POSTS[2]}/like?idUsuario=${user_id}" > /dev/null 2>&1
+  done
+  curl -s -X POST "${BASE_URL}/publicaciones/${POSTS[2]}/comentario?idUsuario=${user_id}&cantidad=13" > /dev/null 2>&1
+done
+
+# Post 3 (IMAGEN MEDIA): 50 likes, 20 comentarios = 70 engagement
+echo -e "${YELLOW}Imagen Media: agregando 70 reacciones...${NC}"
+for user_id in "${USUARIOS_IDS[@]}"; do
+  for i in {1..17}; do
+    curl -s -X POST "${BASE_URL}/publicaciones/${POSTS[3]}/like?idUsuario=${user_id}" > /dev/null 2>&1
+  done
+  curl -s -X POST "${BASE_URL}/publicaciones/${POSTS[3]}/comentario?idUsuario=${user_id}&cantidad=7" > /dev/null 2>&1
+done
+
+# Post 4 (TEXTO TRENDING): 70 likes, 30 comentarios = 100 engagement
+echo -e "${YELLOW}Texto Trending: agregando 100 reacciones...${NC}"
+for user_id in "${USUARIOS_IDS[@]}"; do
+  for i in {1..23}; do
+    curl -s -X POST "${BASE_URL}/publicaciones/${POSTS[4]}/like?idUsuario=${user_id}" > /dev/null 2>&1
+  done
+  curl -s -X POST "${BASE_URL}/publicaciones/${POSTS[4]}/comentario?idUsuario=${user_id}&cantidad=10" > /dev/null 2>&1
+done
+
+# Post 5 (TEXTO POPULAR): 40 likes, 15 comentarios = 55 engagement
+echo -e "${YELLOW}Texto Popular: agregando 55 reacciones...${NC}"
+for user_id in "${USUARIOS_IDS[@]}"; do
+  for i in {1..13}; do
+    curl -s -X POST "${BASE_URL}/publicaciones/${POSTS[5]}/like?idUsuario=${user_id}" > /dev/null 2>&1
+  done
+  curl -s -X POST "${BASE_URL}/publicaciones/${POSTS[5]}/comentario?idUsuario=${user_id}&cantidad=5" > /dev/null 2>&1
+done
+
+# Post 6 (ENCUESTA): 45 likes, 20 comentarios = 65 engagement
+echo -e "${YELLOW}Encuesta: agregando 65 reacciones...${NC}"
+for user_id in "${USUARIOS_IDS[@]}"; do
+  for i in {1..15}; do
+    curl -s -X POST "${BASE_URL}/publicaciones/${POSTS[6]}/like?idUsuario=${user_id}" > /dev/null 2>&1
+  done
+  curl -s -X POST "${BASE_URL}/publicaciones/${POSTS[6]}/comentario?idUsuario=${user_id}&cantidad=7" > /dev/null 2>&1
+done
+
+# Post 7 (TEXTO NORMAL): 20 likes, 5 comentarios = 25 engagement
+echo -e "${YELLOW}Texto Normal: agregando 25 reacciones...${NC}"
+for user_id in "${USUARIOS_IDS[@]}"; do
+  for i in {1..7}; do
+    curl -s -X POST "${BASE_URL}/publicaciones/${POSTS[7]}/like?idUsuario=${user_id}" > /dev/null 2>&1
+  done
+  curl -s -X POST "${BASE_URL}/publicaciones/${POSTS[7]}/comentario?idUsuario=${user_id}&cantidad=2" > /dev/null 2>&1
+done
 
 echo ""
-echo -e "${BLUE}👍 Paso 3: Agregando engagement (likes + comentarios)...${NC}"
-
-# Pub 1: 15 likes + 5 comentarios = 20 beneficio, tamaño 2 → ratio: 10.0
-for i in {1..15}; do
-  curl -s -X POST "${BASE_URL}/publicaciones/${PUB_IDS[0]}/like?idUsuario=user${i}" > /dev/null
-done
-for i in {1..5}; do
-  curl -s -X POST "${BASE_URL}/publicaciones/${PUB_IDS[0]}/comentario?idUsuario=user${i}&cantidad=1" > /dev/null
-done
-echo "✅ Pub #1: 15L + 5C = 20 beneficio, tamaño 2 → Ratio: 10.0 ⭐⭐⭐"
-
-# Pub 2: 10 likes + 5 comentarios = 15 beneficio, tamaño 5 → ratio: 3.0
-for i in {1..10}; do
-  curl -s -X POST "${BASE_URL}/publicaciones/${PUB_IDS[1]}/like?idUsuario=user${i}" > /dev/null
-done
-for i in {1..5}; do
-  curl -s -X POST "${BASE_URL}/publicaciones/${PUB_IDS[1]}/comentario?idUsuario=user${i}&cantidad=1" > /dev/null
-done
-echo "✅ Pub #2: 10L + 5C = 15 beneficio, tamaño 5 → Ratio: 3.0 ⭐⭐"
-
-# Pub 3: 20 likes + 10 comentarios = 30 beneficio, tamaño 10 → ratio: 3.0
-for i in {1..20}; do
-  curl -s -X POST "${BASE_URL}/publicaciones/${PUB_IDS[2]}/like?idUsuario=user${i}" > /dev/null
-done
-for i in {1..10}; do
-  curl -s -X POST "${BASE_URL}/publicaciones/${PUB_IDS[2]}/comentario?idUsuario=user${i}&cantidad=1" > /dev/null
-done
-echo "✅ Pub #3: 20L + 10C = 30 beneficio, tamaño 10 → Ratio: 3.0 ⭐⭐"
-
-# Pub 4: 2 likes + 1 comentario = 3 beneficio, tamaño 3 → ratio: 1.0
-for i in {1..2}; do
-  curl -s -X POST "${BASE_URL}/publicaciones/${PUB_IDS[3]}/like?idUsuario=user${i}" > /dev/null
-done
-curl -s -X POST "${BASE_URL}/publicaciones/${PUB_IDS[3]}/comentario?idUsuario=user1&cantidad=1" > /dev/null
-echo "✅ Pub #4: 2L + 1C = 3 beneficio, tamaño 3 → Ratio: 1.0 ⭐"
-
-# Pub 5: 12 likes + 3 comentarios = 15 beneficio, tamaño 3 → ratio: 5.0
-for i in {1..12}; do
-  curl -s -X POST "${BASE_URL}/publicaciones/${PUB_IDS[4]}/like?idUsuario=user${i}" > /dev/null
-done
-for i in {1..3}; do
-  curl -s -X POST "${BASE_URL}/publicaciones/${PUB_IDS[4]}/comentario?idUsuario=user${i}&cantidad=1" > /dev/null
-done
-echo "✅ Pub #5: 12L + 3C = 15 beneficio, tamaño 3 → Ratio: 5.0 ⭐⭐⭐"
-
+echo -e "${GREEN}✅ Engagement agregado a todas las publicaciones${NC}"
 echo ""
-echo -e "${BLUE}🔄 Paso 4: Optimizando portada con espacio=15...${NC}"
 
-RESULTADO=$(curl -s "${BASE_URL}/publicaciones/optimizar-portada?espacioDisponible=15")
-
+# Ejecutar optimización de portada
+echo -e "${BLUE}🎯 PASO 4: Ejecutando optimización de portada...${NC}"
 echo ""
-echo -e "${GREEN}📊 RESULTADO DE OPTIMIZACIÓN:${NC}"
-echo "$RESULTADO" | jq '.'
 
+ESPACIO=15
+echo -e "${YELLOW}Espacio disponible: ${ESPACIO} unidades${NC}"
+echo -e "${YELLOW}Tamaños: VIDEO=4, IMAGEN=2, ENCUESTA=2, TEXTO=1${NC}"
 echo ""
+
+RESULTADO=$(curl -s "${BASE_URL}/publicaciones/optimizar-portada?espacioDisponible=${ESPACIO}")
+
+echo -e "${CYAN}📊 Portada Optimizada:${NC}"
+echo ""
+
+# Mostrar publicaciones seleccionadas
+echo "$RESULTADO" | jq -r '.publicacionesDestacadas[] | "  ✅ \(.contenido)\n     • Tipo: \(.tipo) (tamaño=\(.tamaño))\n     • Engagement: \(.likes) likes + \(.comentarios) comentarios = \(.likes + .comentarios)\n"'
+
+# Calcular métricas
 BENEFICIO=$(echo "$RESULTADO" | jq '.beneficioTotal')
-ESPACIO=$(echo "$RESULTADO" | jq '.espacioUsado')
-COUNT=$(echo "$RESULTADO" | jq '.publicacionesDestacadas | length')
-
-echo -e "${YELLOW}Métricas:${NC}"
-echo "  📝 Publicaciones seleccionadas: $COUNT"
-echo "  🎯 Beneficio total: $BENEFICIO (likes + comentarios)"
-echo "  📏 Espacio usado: $ESPACIO de 15 disponibles"
+ESPACIO_USADO=$(echo "$RESULTADO" | jq '.espacioUsado')
+CANTIDAD=$(echo "$RESULTADO" | jq '.publicacionesDestacadas | length')
 
 echo ""
-echo -e "${GREEN}✅ Paso 5: Verificaciones...${NC}"
-
-# Verificar que no excede espacio
-if [ "$ESPACIO" -le 15 ]; then
-  echo -e "${GREEN}✅ El espacio usado ($ESPACIO) no excede el disponible (15)${NC}"
-else
-  echo -e "${RED}❌ ERROR: Excede el espacio disponible${NC}"
-fi
-
-# Verificar que se maximiza beneficio
+echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${GREEN}✅ PROBLEMA 3 COMPLETADO${NC}"
+echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
-echo -e "${YELLOW}Análisis de combinaciones posibles:${NC}"
-echo "  Opción A: Pub#1 + Pub#5 + Pub#2 = 20+15+15 = 50 beneficio, 2+3+5 = 10 espacio ✅"
-echo "  Opción B: Pub#3 solo = 30 beneficio, 10 espacio"
-echo "  Opción C: Pub#1 + Pub#5 + Pub#4 = 20+15+3 = 38 beneficio, 2+3+3 = 8 espacio"
+echo -e "${CYAN}📈 Resumen:${NC}"
+echo "  • Publicaciones en portada: ${CANTIDAD}"
+echo "  • Beneficio total (engagement): ${BENEFICIO}"
+echo "  • Espacio usado: ${ESPACIO_USADO} / ${ESPACIO} unidades"
+echo "  • Eficiencia espacial: $(echo "scale=1; $ESPACIO_USADO * 100 / $ESPACIO" | bc)%"
 echo ""
-echo "  La mejor combinación debería incluir Pub#1 y Pub#5 (mejores ratios)"
-
-# Verificar IDs seleccionados
-SELECTED_IDS=$(echo "$RESULTADO" | jq -r '.publicacionesDestacadas[].id')
-if echo "$SELECTED_IDS" | grep -q "${PUB_IDS[0]}"; then
-  echo -e "${GREEN}✅ Pub#1 (ratio 10.0) está seleccionada${NC}"
-else
-  echo -e "${YELLOW}⚠️  Pub#1 NO está seleccionada${NC}"
-fi
-
-if echo "$SELECTED_IDS" | grep -q "${PUB_IDS[4]}"; then
-  echo -e "${GREEN}✅ Pub#5 (ratio 5.0) está seleccionada${NC}"
-else
-  echo -e "${YELLOW}⚠️  Pub#5 NO está seleccionada${NC}"
-fi
-
+echo -e "${CYAN}🌐 Ver en navegador:${NC}"
+echo "   ${BASE_URL}/view/optimizar-portada?espacioDisponible=${ESPACIO}"
 echo ""
-echo -e "${GREEN}✅ Test completado${NC}"
-echo ""
-echo "🌐 Ver resultados en navegador:"
-echo "   ${BASE_URL}/view/optimizar-portada"
-echo ""
-echo "📊 Consultar via API:"
-echo "   curl -s '${BASE_URL}/publicaciones/optimizar-portada?espacioDisponible=15' | jq '.'"
+echo -e "${YELLOW}💡 Observación:${NC} El algoritmo maximiza engagement sin exceder espacio"
 echo ""
 

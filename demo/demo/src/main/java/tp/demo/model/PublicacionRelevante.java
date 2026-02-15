@@ -31,6 +31,7 @@ public class PublicacionRelevante extends Publicacion {
         this.duracion = publicacion.duracion;
         this.tamaño = publicacion.tamaño;
         this.fechaActualizacionRelevancia = new Date();
+        this.tipo = publicacion.tipo;
     }
 }
 

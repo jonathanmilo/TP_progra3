@@ -30,13 +30,14 @@ public class Publicacion {
         this.reacciones = new ArrayList<>();
     }
 
-    public Publicacion(String contenido, String idCreador, Date fechaCreacion, List<Reaccion> reacciones, int costo, int duracion) {
+    public Publicacion(String contenido, String idCreador, Date fechaCreacion, List<Reaccion> reacciones, int costo, int duracion, TipoPublicacion tipo) {
         this.contenido = contenido;
         this.idCreador = idCreador;
         this.fechaCreacion = fechaCreacion;
         this.reacciones = reacciones != null ? reacciones : new ArrayList<>();
         this.costo = costo;
         this.duracion = duracion;
+        this.tipo = tipo;
     }
 
 
@@ -232,18 +233,18 @@ public class Publicacion {
                 .orElse(null);
     }
 
-    public float getRelevancia() {
-        float R;
+    public int getRelevancia() {
+        int R;
         int numReacciones = this.getCantidadReacciones();
         int edadEnDias = (int) ((new Date().getTime() - this.fechaCreacion.getTime()) / (1000 * 60 * 60 * 24));
         if (edadEnDias == 0) {
             edadEnDias = 1; // Evitar división por cero
         }
-        R = (float) numReacciones / edadEnDias;
+        R =  numReacciones / edadEnDias;
         this.relevancia = R;
         this.fechaActualizacionRelevancia = new Date();
 
-        return relevancia;
+        return (int) relevancia;
     }
 
     public Date getFechaActualizacionRelevancia() {

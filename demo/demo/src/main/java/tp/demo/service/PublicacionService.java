@@ -3,6 +3,8 @@ package tp.demo.service;
 import org.springframework.stereotype.Service;
 import tp.demo.model.Publicacion;
 import tp.demo.model.PublicacionRelevante;
+import tp.demo.model.ResultadoAsignacion;
+import tp.demo.model.ResultadoPortada;
 import tp.demo.repository.PublicacionRepository;
 import tp.demo.repository.PublicacionesRelevantesRepository;
 import tp.demo.model.Usuario;
@@ -11,6 +13,8 @@ import tp.demo.utils.KnapsackOptimizador;
 import tp.demo.utils.MergeSort;
 
 import java.util.*;
+
+import static tp.demo.utils.InsertionSort.insertionSortUsuariosDesc;
 
 @Service
 public class PublicacionService {
@@ -76,8 +80,14 @@ public class PublicacionService {
             }
 
             Publicacion publicacion = publicacionOpt.get();
+
+            // Agregar like
             publicacion.agregarLike(idUsuario);
+
             publicacionRepository.save(publicacion);
+
+            // Actualizar relevancia del creador
+            actualizarRelevanciaUsuario(publicacion.getIdCreador());
 
             // Verificar si necesitamos ajustar el top K
             mantenerTopKRelevantes();
@@ -102,8 +112,14 @@ public class PublicacionService {
             }
 
             Publicacion publicacion = publicacionOpt.get();
+
+            // Agregar comentarios
             publicacion.agregarComentarios(idUsuario, cantidad, textoComentario);
+
             publicacionRepository.save(publicacion);
+
+            // Actualizar relevancia del creador
+            actualizarRelevanciaUsuario(publicacion.getIdCreador());
 
             // Verificar si necesitamos ajustar el top K
             mantenerTopKRelevantes();
@@ -128,8 +144,14 @@ public class PublicacionService {
             }
 
             Publicacion publicacion = publicacionOpt.get();
+
+            // Agregar reacción
             publicacion.agregarReaccion(idUsuario, like, comentarios, textoComentario);
+
             publicacionRepository.save(publicacion);
+
+            // Actualizar relevancia del creador
+            actualizarRelevanciaUsuario(publicacion.getIdCreador());
 
             // Verificar si necesitamos ajustar el top K
             mantenerTopKRelevantes();
@@ -176,26 +198,55 @@ public class PublicacionService {
             return new ArrayList<>();
         }
     }
-    
-    public List<PublicacionRelevante> actualizarK(int nuevoK) {
-        this.k = nuevoK;
+
+    /**
+     * Recalcula la relevancia de todas las publicaciones y actualiza el Top K.
+     * Este método debe llamarse cuando:
+     * - Se agregan nuevas publicaciones
+     * - Cambia el engagement (likes/comentarios)
+     * - Se quiere refrescar el Top K manualmente
+     */
+    public void calcularYActualizarRelevancia() {
+        List<Publicacion> todasPublicaciones = publicacionRepository.findAll();
+        for (Publicacion pub : todasPublicaciones) {
+            pub.getRelevancia();
+            publicacionRepository.save(pub);
+        }
+
+        // Actualizar tabla de publicaciones relevantes (Top K)
         mantenerTopKRelevantes();
-        return obtenerPublicacionesRelevantes();
     }
 
-    public List<KnapsackOptimizador.ResultadoAsignacion> generarCampaña(int presupuestoMaximoEmpresa) {
+    /**
+     * Genera una campaña publicitaria optimizada.
+     * Estrategia: Cuando el presupuesto es limitado, es mejor asignar anuncios
+     * a usuarios que crean contenido popular, ya que tienen mayor engagement
+     * y potencial de conversión.
+     *
+     * @param presupuestoMaximoEmpresa Presupuesto total disponible
+     * @return Lista de asignaciones de anuncios por usuario
+     */
+    public List<ResultadoAsignacion> generarCampaña(int presupuestoMaximoEmpresa) {
         List<Usuario> usuarios = usuarioRepository.findAll();
-        List<Publicacion> anuncios = publicacionRepository.findAll();
-        List<KnapsackOptimizador.ResultadoAsignacion> resultadosFinales = new ArrayList<>();
+        List<Publicacion> todasPublicaciones = publicacionRepository.findAll();
 
+        insertionSortUsuariosDesc(usuarios);
+
+        List<ResultadoAsignacion> resultadosFinales = new ArrayList<>();
         int costoTotalAcumulado = 0;
 
         for (Usuario usuario : usuarios) {
-            KnapsackOptimizador.ResultadoAsignacion asignacion = KnapsackOptimizador.optimizarParaUsuario(usuario, anuncios);
+            ResultadoAsignacion asignacion =
+                KnapsackOptimizador.optimizarParaUsuario(usuario, todasPublicaciones);
 
             if (costoTotalAcumulado + asignacion.getCostoEconomicoTotal() <= presupuestoMaximoEmpresa) {
                 resultadosFinales.add(asignacion);
                 costoTotalAcumulado += asignacion.getCostoEconomicoTotal();
+            } else {
+                // Los usuarios con contenido menos relevante se quedarán sin asignación
+                ResultadoAsignacion asignacionVacia =
+                    new ResultadoAsignacion(usuario.getNombre());
+                resultadosFinales.add(asignacionVacia);
             }
         }
 
@@ -204,30 +255,65 @@ public class PublicacionService {
     
     // ========== MÉTODOS PRIVADOS ==========
     
+    /**
+     * Actualiza la relevancia acumulada del usuario recalculando desde todas sus publicaciones.
+     * Esto garantiza que el cache siempre esté correcto.
+     */
+    private void actualizarRelevanciaUsuario(String idUsuario) {
+        if (idUsuario == null) {
+            return;
+        }
+
+        try {
+            // Obtener usuario
+            Optional<Usuario> usuarioOpt = usuarioRepository.findById(idUsuario);
+            if (usuarioOpt.isEmpty()) {
+                return;
+            }
+
+            Usuario usuario = usuarioOpt.get();
+
+            // Recalcular relevancia total desde todas sus publicaciones
+            List<Publicacion> todasPublicaciones = publicacionRepository.findAll();
+            int relevanciaTotal = 0;
+
+            for (Publicacion p : todasPublicaciones) {
+                if (p.getIdCreador() != null && p.getIdCreador().equals(idUsuario)) {
+                    relevanciaTotal += p.getRelevancia();
+                }
+            }
+
+            // Actualizar cache
+            usuario.setRelevanciaEnPosteos(relevanciaTotal);
+            usuarioRepository.save(usuario);
+
+            System.out.println("Usuario " + usuario.getNombre() + " relevancia actualizada: " + relevanciaTotal);
+
+        } catch (Exception e) {
+            System.err.println("Error al actualizar relevancia de usuario: " + e.getMessage());
+        }
+    }
+
     private void mantenerTopKRelevantes() {
         try {
-            // 1. Obtener TODAS las publicaciones
-            List<Publicacion> todas = publicacionRepository.findAll();
+            List<Publicacion> publicaciones = publicacionRepository.findAll();
 
-            if (todas.isEmpty()) {
+            if (publicaciones.isEmpty()) {
                 return;
             }
             
-            // 2. Ordenar por relevancia usando MergeSort
             List<Publicacion> ordenadas = mergeSortUtil.MergeSortByRelevancia(
-                new ArrayList<>(todas), 0, todas.size() - 1);
+                new ArrayList<>(publicaciones), 0, publicaciones.size() - 1);
 
-            // 3. Tomar solo las K más relevantes
             int limite = Math.min(k, ordenadas.size());
             List<Publicacion> topK = ordenadas.subList(0, limite);
 
-            // 4. Obtener IDs de las top K
             Set<String> idsTopK = new HashSet<>();
             for (Publicacion p : topK) {
                 idsTopK.add(p.getId());
             }
 
-            // 5. Limpiar publicaciones_relevantes que ya no están en top K
+            // Limpiar publicaciones_relevantes que ya no están en top K
             List<PublicacionRelevante> relevantesActuales = relevantesRepository.findAll();
             for (PublicacionRelevante pr : relevantesActuales) {
                 if (!idsTopK.contains(pr.getId())) {
@@ -235,13 +321,12 @@ public class PublicacionService {
                 }
             }
             
-            // 6. Actualizar o insertar las top K en publicaciones_relevantes
+            // Actualizar o insertar las top K en publicaciones_relevantes
             for (Publicacion p : topK) {
                 PublicacionRelevante relevante = new PublicacionRelevante(p);
                 relevantesRepository.save(relevante);
             }
 
-            System.out.println("✅ Top K=" + k + " publicaciones relevantes actualizadas. Total: " + topK.size());
 
         } catch(Exception e) {
             System.err.println("Error al mantener top K: " + e.getMessage());
@@ -263,12 +348,12 @@ public class PublicacionService {
      * Selecciona publicaciones destacadas que maximizan beneficio (likes + comentarios)
      * sin exceder el espacio disponible en la portada.
      *
-     * Usa Programación Dinámica (Knapsack 0/1) para encontrar la solución óptima.
+     * Usa Programación Dinámica sobre el algoritmo de la mochila.
      *
      * @param espacioDisponible Espacio máximo en la portada
      * @return Resultado con publicaciones seleccionadas y métricas
      */
-    public KnapsackOptimizador.ResultadoPortada optimizarPortada(int espacioDisponible) {
+    public ResultadoPortada optimizarPortada(int espacioDisponible) {
         List<Publicacion> todas = publicacionRepository.findAll();
         return KnapsackOptimizador.optimizarPortada(todas, espacioDisponible);
     }

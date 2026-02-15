@@ -94,7 +94,7 @@
 </head>
 <body>
     <a href="/" class="back-link">← Volver al inicio</a>
-    <h1>📝 Lista de Publicaciones</h1>
+    <h1>Lista de Publicaciones</h1>
 
     <div style="display: flex; gap: 10px; margin-bottom: 20px;">
         <a href="/view/relevantes" style="
@@ -105,7 +105,7 @@
             text-decoration: none;
             border-radius: 4px;
             font-weight: bold;
-        ">⭐ Ver Publicaciones Relevantes</a>
+        ">Ver Publicaciones Relevantes</a>
 
         <a href="/view/optimizar-publicidad" style="
             display: inline-block;
@@ -139,11 +139,6 @@
                     <td th:text="${publicacion.idCreador}">ID Creador</td>
                     <td th:text="${#dates.format(publicacion.fechaCreacion, 'dd/MM/yyyy HH:mm')}">Fecha</td>
                     <td>
-                        <div class="stats">
-                            <span class="stat-badge stat-reactions">
-                                🔥 <span th:text="${publicacion.cantidadReacciones}">0</span> reacciones
-                            </span>
-                        </div>
                     </td>
                     <td class="relevancia" th:text="${#numbers.formatDecimal(publicacion.relevancia, 1, 2)}">0.00</td>
                     <td class="costo">$<span th:text="${publicacion.costo}">0</span></td>
@@ -154,7 +149,7 @@
     </div>
 
     <div th:if="${publicaciones == null or publicaciones.isEmpty()}" class="no-data">
-        <p>📭 No hay publicaciones en el sistema</p>
+        <p> No hay publicaciones en el sistema</p>
     </div>
 </body>
 </html>

@@ -120,11 +120,101 @@
     <h1>⭐ Publicaciones Relevantes</h1>
 
     <div class="header-section">
-        <span class="info-badge" th:text="'Total: ' + ${publicaciones.size()} + ' publicaciones'">Total: 0 publicaciones</span>
-        <p style="margin: 10px 0 0 0; color: #666;">
-            Estas son las publicaciones más relevantes del sistema, calculadas usando el algoritmo de relevancia basado en likes, comentarios y tiempo.
-        </p>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+            <div>
+                <span class="info-badge" th:text="'Total: ' + ${publicaciones.size()} + ' publicaciones'">Total: 0 publicaciones</span>
+                <p style="margin: 10px 0 0 0; color: #666;">
+                    Estas son las publicaciones más relevantes del sistema, calculadas usando el algoritmo de relevancia basado en likes, comentarios y tiempo.
+                </p>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <form id="updateKForm" style="display: flex; gap: 10px; align-items: center;">
+                    <label for="nuevoK" style="font-weight: bold; color: #333;">
+                        📊 Cantidad a mostrar (K):
+                    </label>
+                    <select id="nuevoK" name="nuevoK" style="padding: 8px 12px; border: 2px solid #28a745; border-radius: 4px; font-size: 14px; cursor: pointer;">
+                        <option value="5">Top 5</option>
+                        <option value="10" selected>Top 10</option>
+                        <option value="15">Top 15</option>
+                        <option value="20">Top 20</option>
+                        <option value="30">Top 30</option>
+                        <option value="50">Top 50</option>
+                    </select>
+                    <button type="button" onclick="actualizarK()" style="padding: 8px 16px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                        🔄 Actualizar
+                    </button>
+                </form>
+
+                <button type="button" onclick="recalcularRelevancia()" style="padding: 8px 16px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                    ⚡ Recalcular
+                </button>
+            </div>
+        </div>
+
+        <div id="mensaje" style="margin-top: 15px; padding: 10px; border-radius: 4px; display: none;"></div>
     </div>
+
+    <script>
+        function actualizarK() {
+            const nuevoK = document.getElementById('nuevoK').value;
+            const mensaje = document.getElementById('mensaje');
+
+            mensaje.style.display = 'block';
+            mensaje.style.backgroundColor = '#fff3cd';
+            mensaje.style.color = '#856404';
+            mensaje.textContent = '⏳ Actualizando K a ' + nuevoK + '...';
+
+            fetch('/publicaciones/relevantes/actualizarK?nuevoK=' + nuevoK, {
+                method: 'POST'
+            })
+            .then(response => response.text())
+            .then(data => {
+                mensaje.style.backgroundColor = '#d4edda';
+                mensaje.style.color = '#155724';
+                mensaje.textContent = '✅ ' + data;
+
+                // Recargar la página después de 1 segundo
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            })
+            .catch(error => {
+                mensaje.style.backgroundColor = '#f8d7da';
+                mensaje.style.color = '#721c24';
+                mensaje.textContent = '❌ Error al actualizar K: ' + error;
+            });
+        }
+
+        function recalcularRelevancia() {
+            const mensaje = document.getElementById('mensaje');
+
+            mensaje.style.display = 'block';
+            mensaje.style.backgroundColor = '#fff3cd';
+            mensaje.style.color = '#856404';
+            mensaje.textContent = '⏳ Recalculando relevancia de todas las publicaciones...';
+
+            fetch('/publicaciones/relevantes/calcular', {
+                method: 'POST'
+            })
+            .then(response => response.text())
+            .then(data => {
+                mensaje.style.backgroundColor = '#d4edda';
+                mensaje.style.color = '#155724';
+                mensaje.textContent = '✅ ' + data;
+
+                // Recargar la página después de 1 segundo
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            })
+            .catch(error => {
+                mensaje.style.backgroundColor = '#f8d7da';
+                mensaje.style.color = '#721c24';
+                mensaje.textContent = '❌ Error al recalcular: ' + error;
+            });
+        }
+    </script>
 
     <div th:if="${publicaciones != null and !publicaciones.isEmpty()}">
         <table>
@@ -134,6 +224,7 @@
                     <th>ID</th>
                     <th>Contenido</th>
                     <th>ID Creador</th>
+                    <th>Tipo</th>
                     <th>Fecha Creación</th>
                     <th>Métricas</th>
                     <th>Relevancia</th>
@@ -147,6 +238,7 @@
                     <td th:text="${publicacion.id}">ID</td>
                     <td class="contenido" th:text="${publicacion.contenido}" th:title="${publicacion.contenido}">Contenido</td>
                     <td th:text="${publicacion.idCreador}">ID Creador</td>
+                    <td th:text="${publicacion.tipo}">Tipo</td>
                     <td th:text="${#dates.format(publicacion.fechaCreacion, 'dd/MM/yyyy HH:mm')}">Fecha</td>
                     <td>
                         <div class="stats">

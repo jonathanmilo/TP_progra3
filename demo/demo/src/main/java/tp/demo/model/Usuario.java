@@ -14,6 +14,11 @@ public class Usuario {
 
     public int tiempoMaximoExposicion;
     
+    /**
+    Cantidad de likes + comentarios en posteos publicados por el usuario
+     */
+    public int relevanciaEnPosteos = 0;
+
     public Usuario() {
     }
     
@@ -41,4 +46,15 @@ public class Usuario {
     public int getTiempoMaximoExposicion() { return tiempoMaximoExposicion; }
 
     public void setTiempoMaximoExposicion(int tiempo) { this.tiempoMaximoExposicion = tiempo; }
+
+    public int getRelevanciaEnPosteos() { return relevanciaEnPosteos; }
+
+    public void setRelevanciaEnPosteos(int relevancia) { this.relevanciaEnPosteos = relevancia; }
+
+    /**
+     * Incrementa la relevancia acumulada cuando una publicación del usuario gana engagement
+     */
+    public void incrementarRelevancia(int incremento) {
+        this.relevanciaEnPosteos += incremento;
+    }
 }

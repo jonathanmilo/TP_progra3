@@ -46,6 +46,16 @@
         tr:hover {
             background-color: #f8f9fa;
         }
+        .relevancia-alta {
+            font-weight: bold;
+            color: #28a745;
+        }
+        .relevancia-media {
+            color: #ffc107;
+        }
+        .relevancia-baja {
+            color: #6c757d;
+        }
         .no-data {
             text-align: center;
             padding: 40px;
@@ -66,7 +76,7 @@
 </head>
 <body>
     <a href="/" class="back-link">← Volver al inicio</a>
-    <h1>👥 Lista de Usuarios</h1>
+    <h1>Lista de Usuarios</h1>
 
     <div th:if="${usuarios != null and !usuarios.isEmpty()}">
         <table>
@@ -74,21 +84,29 @@
                 <tr>
                     <th>ID</th>
                     <th>Nombre</th>
-                    <th>Tiempo Máx. Exposición</th>
+                    <th>Tiempo Máximo de exposición (seg)</th>
+                    <th>Relevancia en Posteos</th>
                 </tr>
             </thead>
             <tbody>
                 <tr th:each="usuario : ${usuarios}">
                     <td th:text="${usuario.id}">ID</td>
                     <td th:text="${usuario.nombre}">Nombre</td>
-                    <td th:text="${usuario.tiempoMaximoExposicion} + ' seg'">Tiempo</td>
+                    <td><span th:text="${usuario.tiempoMaximoExposicion}">Tiempo</span> seg</td>
+                    <td>
+                        <span th:text="${usuario.relevanciaEnPosteos}"
+                              th:classappend="${usuario.relevanciaEnPosteos >= 100} ? 'relevancia-alta' : (${usuario.relevanciaEnPosteos >= 30} ? 'relevancia-media' : 'relevancia-baja')">
+                            0
+                        </span>
+                        <small style="color: #6c757d;"> reacciones</small>
+                    </td>
                 </tr>
             </tbody>
         </table>
     </div>
 
     <div th:if="${usuarios == null or usuarios.isEmpty()}" class="no-data">
-        <p>📭 No hay usuarios registrados en el sistema</p>
+        <p>No hay usuarios registrados en el sistema</p>
     </div>
 </body>
 </html>
