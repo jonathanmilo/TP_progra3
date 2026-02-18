@@ -60,6 +60,7 @@ public class PublicacionController {
         return publicacionService.agregarComentarios(id, idUsuario, cantidad, textoComentario);
     }
 
+
     @PostMapping("/{id}/interactuar")
     public boolean interactuar(
             @PathVariable String id,
@@ -76,6 +77,10 @@ public class PublicacionController {
         return publicacionService.obtenerPublicacionesRelevantes();
     }
 
+    @PostMapping("/relevantes/actualizarK")
+    public List<PublicacionRelevante> actualizarK(@RequestParam int nuevoK) {
+        return publicacionService.actualizarK(nuevoK);
+    }
     @PostMapping("/relevantes/calcular")
     public ResponseEntity<String> calcularRelevancia() {
         publicacionService.calcularYActualizarRelevancia();

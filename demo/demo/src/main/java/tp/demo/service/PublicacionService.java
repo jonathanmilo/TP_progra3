@@ -48,6 +48,12 @@ public class PublicacionService {
 
         return nueva;
     }
+
+    public List<PublicacionRelevante> actualizarK(int nuevoK) {
+        this.k = nuevoK;
+        mantenerTopKRelevantes();
+        return obtenerPublicacionesRelevantes();
+    }
     
     public boolean reaccionar(String idPublicacion, String idUsuario) {
         try {
@@ -190,7 +196,7 @@ public class PublicacionService {
 
             // Ordenar una vez más para asegurar el orden correcto
             // (esto es O(K log K) en lugar de O(N log N))
-            relevantes.sort((a, b) -> Float.compare(b.getRelevancia(), a.getRelevancia()));
+         //   relevantes.sort((a, b) -> Float.compare(b.getRelevancia(), a.getRelevancia()));
 
             return relevantes;
         } catch(Exception e) {
@@ -305,7 +311,7 @@ public class PublicacionService {
             List<Publicacion> ordenadas = mergeSortUtil.MergeSortByRelevancia(
                 new ArrayList<>(publicaciones), 0, publicaciones.size() - 1);
 
-            int limite = Math.min(k, ordenadas.size());
+            int limite = Math.min(this.k, ordenadas.size());
             List<Publicacion> topK = ordenadas.subList(0, limite);
 
             Set<String> idsTopK = new HashSet<>();
