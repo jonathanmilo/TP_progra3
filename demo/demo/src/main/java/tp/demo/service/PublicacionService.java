@@ -44,7 +44,7 @@ public class PublicacionService {
         Publicacion nueva = publicacionRepository.save(publicacion);
 
         // Limpiar publicaciones menos relevantes si excedemos K
-        mantenerTopKRelevantes();
+       //  mantenerTopKRelevantes();
 
         return nueva;
     }
@@ -58,6 +58,7 @@ public class PublicacionService {
     public boolean reaccionar(String idPublicacion, String idUsuario) {
         try {
             Optional<Publicacion> publicacionOpt = publicacionRepository.findById(idPublicacion);
+            List<PublicacionRelevante> publicacionesRelevantes = obtenerPublicacionesRelevantes();
 
             if (publicacionOpt.isEmpty()) {
                 return false;
@@ -66,9 +67,21 @@ public class PublicacionService {
             Publicacion publicacion = publicacionOpt.get();
             publicacion.agregarReaccion(idUsuario);
             publicacionRepository.save(publicacion);
+            if(publicacionesRelevantes.size() > 0) {
+                for (PublicacionRelevante pr : publicacionesRelevantes) {
+                    if (pr.getId().equals(publicacion.getId())) {
+                        pr.setRelevancia(publicacion.getRelevancia());
+                        relevantesRepository.save(pr);
+                        
+                        actualizarRelevantes();
+                        break;
+                    }
+                }
+            }
+
 
             // Verificar si necesitamos ajustar el top K
-            mantenerTopKRelevantes();
+        //    mantenerTopKRelevantes();
 
             return true;
         } catch(Exception e) {
@@ -77,6 +90,15 @@ public class PublicacionService {
         }
     }
     
+    public List<PublicacionRelevante> actualizarRelevantes() {
+        List<PublicacionRelevante> publicaciones = obtenerPublicacionesRelevantes();
+
+       List<PublicacionRelevante> sortedPublicaciones = mergeSortUtil.MergeSortRelevantes(publicaciones, 0, publicaciones.size() - 1);
+        relevantesRepository.saveAll(sortedPublicaciones);
+        return sortedPublicaciones;
+    }
+
+
     public boolean agregarLike(String idPublicacion, String idUsuario) {
         try {
             Optional<Publicacion> publicacionOpt = publicacionRepository.findById(idPublicacion);
@@ -96,7 +118,7 @@ public class PublicacionService {
             actualizarRelevanciaUsuario(publicacion.getIdCreador());
 
             // Verificar si necesitamos ajustar el top K
-            mantenerTopKRelevantes();
+            actualizarRelevantes();
 
             return true;
         } catch(Exception e) {
@@ -128,7 +150,7 @@ public class PublicacionService {
             actualizarRelevanciaUsuario(publicacion.getIdCreador());
 
             // Verificar si necesitamos ajustar el top K
-            mantenerTopKRelevantes();
+            actualizarRelevantes();
 
             return true;
         } catch(Exception e) {
