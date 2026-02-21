@@ -113,20 +113,40 @@ public class KnapsackOptimizador {
      * @return Resultado con publicaciones destacadas
      */
     public static ResultadoPortada optimizarPortada(List<Publicacion> publicaciones, int espacioDisponible) {
-        // Usar el método genérico de Knapsack
-        List<Integer> indicesSeleccionados = mochila(
-            publicaciones,
-            espacioDisponible,
-            Publicacion::getTamaño,                                    // Peso = tamaño
-            pub -> pub.getLikes() + pub.getComentarios()               // Beneficio = engagement
-        );
-
-        // Construir resultado
-        ResultadoPortada resultado = new ResultadoPortada();
-        for (int idx : indicesSeleccionados) {
-            resultado.addPublicacion(publicaciones.get(idx));
+        ResultadoPortada resultado = new ResultadoPortada(espacioDisponible);
+        int n = publicaciones.size();
+        
+        // Crear matriz de programación dinámica
+        int[][] dp = new int[n + 1][espacioDisponible + 1];
+        
+        // Llenar la matriz
+        for (int i = 1; i <= n; i++) {
+            Publicacion pub = publicaciones.get(i - 1);
+            int tamaño = pub.getTamaño();
+            int beneficio = pub.getLikes() + pub.getComentarios();
+            
+            for (int w = 0; w <= espacioDisponible; w++) {
+                if (tamaño <= w) {
+                    dp[i][w] = Math.max(
+                        dp[i - 1][w],
+                        dp[i - 1][w - tamaño] + beneficio
+                    );
+                } else {
+                    dp[i][w] = dp[i - 1][w];
+                }
+            }
         }
-
+        
+        // Reconstruir la solución
+        int w = espacioDisponible;
+        for (int i = n; i > 0; i--) {
+            if (dp[i][w] != dp[i - 1][w]) {
+                Publicacion pub = publicaciones.get(i - 1);
+                resultado.addPublicacion(pub);
+                w -= pub.getTamaño();
+            }
+        }
+        
         return resultado;
     }
 }

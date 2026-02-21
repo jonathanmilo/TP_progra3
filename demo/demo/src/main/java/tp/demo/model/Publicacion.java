@@ -13,6 +13,9 @@ public class Publicacion {
     @Id
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private String id;
+private static ArbolBinarioPublicaciones arbolGlobal = new ArbolBinarioPublicaciones();
+
+// Métodos estáticos para acceder al árbol
 
     public String contenido;
     public String idCreador;
@@ -95,6 +98,20 @@ public class Publicacion {
         if (reacciones == null) return 0;
         return reacciones.stream().mapToInt(Reaccion::getComentarios).sum();
     }
+
+    public static ArbolBinarioPublicaciones getArbolGlobal() {
+        return arbolGlobal;
+    }
+
+    public static void setArbolGlobal(ArbolBinarioPublicaciones arbol) {
+        arbolGlobal = arbol;
+    }
+
+
+
+
+
+
 
     public int getCosto() { return costo; }
     public void setCosto(int costo) { this.costo = costo; }
@@ -233,18 +250,36 @@ public class Publicacion {
                 .orElse(null);
     }
 
-    public int getRelevancia() {
-        int R;
+
+    public float getRelevancia() {
+        float relevanciaAnterior = this.relevancia;
         int numReacciones = this.getCantidadReacciones();
         int edadEnDias = (int) ((new Date().getTime() - this.fechaCreacion.getTime()) / (1000 * 60 * 60 * 24));
         if (edadEnDias == 0) {
             edadEnDias = 1; // Evitar división por cero
         }
-        R =  numReacciones / edadEnDias;
-        this.relevancia = R;
+        
+        // Calcular nueva relevancia
+        float nuevaRelevancia = (float) numReacciones / edadEnDias;
+        this.relevancia = nuevaRelevancia;
         this.fechaActualizacionRelevancia = new Date();
 
-        return (int) relevancia;
+        // Actualizar en el árbol si el ID existe (la publicación ya está guardada)
+        if (this.id != null && !this.id.isEmpty()) {
+            // Si la relevancia cambió significativamente, actualizar en el árbol
+            if (Math.abs(nuevaRelevancia - relevanciaAnterior) > 0.01f) {
+                // Actualización asíncrona para no bloquear
+                new Thread(() -> {
+                    try {
+                        arbolGlobal.actualizarRelevancia(this.id);
+                    } catch (Exception e) {
+                        System.err.println("Error actualizando árbol: " + e.getMessage());
+                    }
+                }).start();
+            }
+        }
+
+        return this.relevancia;
     }
 
     public Date getFechaActualizacionRelevancia() {
