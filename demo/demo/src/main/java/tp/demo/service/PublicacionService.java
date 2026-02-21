@@ -2,7 +2,6 @@ package tp.demo.service;
 
 import org.springframework.stereotype.Service;
 import tp.demo.model.Publicacion;
-import tp.demo.model.PublicacionRelevante;
 import tp.demo.model.ResultadoAsignacion;
 import tp.demo.model.ResultadoPortada;
 import tp.demo.repository.PublicacionRepository;
